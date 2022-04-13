@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Document</title>
+    </head>
+    <body>
+
+        <img id="img-container" width="800" height="600" src="">
+
+        <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"
+                integrity="sha384-fKnu0iswBIqkjxrhQCTZ7qlLHOFEgNkRmK2vaO/LbTZSXdJfAu6ewRBdwHPhBo/H"
+                crossorigin="anonymous"></script>
+
+        <script>
+
+            const socket = io("http://127.0.0.1:8888", {
+                transports: ['websocket', 'polling', 'flashsocket'],
+            })
+
+            socket.on('connect', data => {
+                socket.emit('client_accept', 'admin:agility10@177.37.175.190:554')
+            })
+
+            socket.on('server_accept', data => {
+                console.log(data)
+            })
+
+            socket.on('image', data => {
+
+                //let image = document.getElementById('img-container')
+                //image.src = `data:image/jpeg;base64,${ data }`
+
+                console.log(data)
+            })
+
+        </script>
+
+    </body>
+</html>

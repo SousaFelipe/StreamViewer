@@ -2,10 +2,10 @@ import base64
 import socketio
 import asyncio
 import threading
+import concurrent.futures
 
 import cv2 as cv
 
-from time import sleep
 from aiohttp import web
 
 
@@ -19,37 +19,31 @@ connections = []
 
 @sio.event
 async def connect(sid, environ):
+    print(f'[CONNECTED]: { sid }')
     await sio.emit(event='server_connect', data={'data': sid}, to=sid)
 
 
 @sio.event
 async def client_accept(sid, data):
+    print(f'[ACCEPTED]: { sid }')
     global connections
-
-    conn = {
+    connections.append({
         'id': sid,
         'device': data,
-        'task': None,
         'running': False
-    }
-
-    conn['task'] = threading.Thread(target=handle_connection, args=(conn,))
-
-    connections.append(conn)
-
+    })
     await sio.emit(event='server_accept', data={'data': sid}, to=sid)
 
 
-async def handle_connection(connection):
-
-    device = connection['device']
-    wCap = cv.VideoCapture(f"rtsp://{device}/cam/realmonitor?channel=1&subtype=0")
+def handle_connection(conn):
+    device = conn['device']
+    stream = cv.VideoCapture(f"rtsp://{device}/cam/realmonitor?channel=1&subtype=0")
 
     while True:
-        frame = wCap.read()
+        frame = stream.read()
         encodedimg = base64.b64encode(frame[1])[1]
-        await sio.emit(event='image', data={'data': encodedimg}, to=connection['id'])
-        await asyncio.sleep(1/24)
+        sio.emit(event='image', data={'data': encodedimg}, to=conn['id'])
+        asyncio.sleep(1/24)
 
 
 async def main():
@@ -62,14 +56,19 @@ async def main():
     await site.start()
 
     while True:
-        if len(connections) > 0:
+        count_connections = len(connections)
+
+        if count_connections > 0:
+            loop = asyncio.get_running_loop()
+            executor = concurrent.futures.ThreadPoolExecutor(max_workers=count_connections+1)
+
             for conn in connections:
                 if not conn['running']:
                     conn['running'] = True
-                    conn['task'].run()
+                    asyncio.ensure_future(loop.run_in_executor(executor, handle_connection, conn))
+
+        await asyncio.sleep(2)
 
 
 if __name__ == '__main__':
-    # web.run_app(app=app, host='127.0.0.1', port=8888, loop=main())
     asyncio.run(main())
-
