@@ -1,7 +1,6 @@
 import base64
 import socketio
 import asyncio
-import threading
 import concurrent.futures
 
 import cv2 as cv
@@ -18,7 +17,7 @@ connections = []
 
 
 @sio.event
-async def connect(sid, environ):
+async def connect(sid):
     print(f'[CONNECTED]: { sid }')
     await sio.emit(event='server_connect', data={'data': sid}, to=sid)
 
