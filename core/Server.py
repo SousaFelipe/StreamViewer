@@ -1,41 +1,57 @@
 import asyncio
-
-import cv2 as cv
 import socketio
+
 from aiohttp import web
 
-from core.Connections import Connections
+from core.Channel import Channel
+from core.Connection import Connection
 
 
-class Server(object):
+CONNECTIONS = []
 
-    def __init__(self):
-        self.connection_manager = None
-        self.io = socketio.AsyncServer(async_mode='aiohttp', cors_allowed_origins='*')
-        self.webapp = web.Application()
 
-    async def loop(self):
-        runner = web.AppRunner(self.webapp)
-        await runner.setup()
+def load_events(io: socketio.AsyncServer) -> socketio.AsyncServer:
 
-        site = web.TCPSite(runner=runner, host='127.0.0.1', port=8888)
-        await site.start()
+    @io.event
+    def connect(sid, data):
+        print(f'[CONNECTED]: {sid}')
 
-        while True:
+    @io.event
+    def disconnect(data):
+        if data is not None:
+            msg = f'[DISCONNECTED]: {data}'
+            conn: Connection = Connection.load(CONNECTIONS, sid=data)
+            conn.task.cancel(msg=msg)
+            CONNECTIONS.remove(conn)
+            print(msg)
 
-            if self.connection_manager.is_not_empty():
-                for conn in connections:
-                    if not conn['running']:
-                        conn['running'] = True
-                        conn['task'] = asyncio.create_task(handle_connection(conn))
-                        print(f"[USER]: {conn['id']} running...")
-            await asyncio.sleep(1)
-        pass
+    @io.event
+    async def client_accept(sid, data):
+        if data is not None:
+            CONNECTIONS.append(
+                Connection(
+                    sid=sid,
+                    channel=Channel(data)
+                ))
+            await io.emit(event='server_accept', data={'data': sid}, to=sid)
 
-    def boot(self, connection_manager: Connections):
-        self.connection_manager = connection_manager
-        self.io.attach(self.webapp)
-        pass
+    return io
 
-    def run(self):
-        asyncio.run(self.loop())
+
+async def loop(io: socketio.AsyncServer):
+
+    app = web.Application()
+    io.attach(app)
+
+    runner = web.AppRunner(app)
+    await runner.setup()
+
+    site = web.TCPSite(runner=runner, host='127.0.0.1', port=8888)
+    await site.start()
+
+    while True:
+        for conn in CONNECTIONS:
+            if not conn.running:
+                conn.task = asyncio.create_task(Connection.worker(io=io, connection=conn))
+                conn.running = True
+        await asyncio.sleep(0.001)

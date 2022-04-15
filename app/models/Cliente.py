@@ -1,6 +1,6 @@
 
 
-class Client(object):
+class Cliente(object):
 
     def __init__(self, sid, channel):
         pass
