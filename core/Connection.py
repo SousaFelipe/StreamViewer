@@ -8,19 +8,17 @@ from core.Channel import Channel
 
 class Connection(object):
 
-
     def __init__(self, sid, channel: Channel):
         self.sid = sid
         self.channel = channel
         self.task = None
         self.running = False
 
-
     @staticmethod
     async def worker(io: socketio.AsyncServer, connection):
 
         ch: Channel = connection.channel
-        video: cv.VideoCapture = ch.video(channel=3)
+        video: cv.VideoCapture = ch.video()
 
         if video.isOpened():
             while True:
@@ -28,12 +26,11 @@ class Connection(object):
                 if ok:
                     (_, image) = cv.imencode('.jpg', frame)
                     await io.emit(event='image', data={'image': image.tobytes()}, to=connection.sid)
-                    await asyncio.sleep(0.01666)
+                    await asyncio.sleep(0.005)
                 else:
                     print('Erro on read frame')
         else:
             print('Error on open connection with channel.')
-
 
     @staticmethod
     def load(connections, sid):

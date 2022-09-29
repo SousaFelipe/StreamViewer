@@ -21,23 +21,28 @@ def decode_port(data: str):
     return spl[1]
 
 
-class Channel(object):
+def decode_channel(data: str):
+    spl = data.split('@')[2]
+    return spl
 
+
+class Channel(object):
 
     def __init__(self, data: str):
         self.username = decode_username(data)
         self.password = decode_password(data)
         self.address = decode_address(data)
         self.port = decode_port(data)
+        self.channel = decode_channel(data)
 
-
-    def video(self, channel: int = 1, subtype: int = 0) -> cv.VideoCapture:
-        url = 'rtsp://{}:{}@{}:{}/cam/realmonitor?channel={}&subtype={}'\
+    def video(self, subtype: int = 0) -> cv.VideoCapture:
+        url = 'rtsp://{}:{}@{}:{}/cam/realmonitor?channel={}&subtype={}' \
             .format(
                 self.username,
                 self.password,
                 self.address,
                 self.port,
-                channel,
-                subtype)
+                self.channel,
+                subtype
+            )
         return cv.VideoCapture(url)

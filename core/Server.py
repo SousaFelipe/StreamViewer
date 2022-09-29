@@ -46,7 +46,7 @@ async def loop(io: socketio.AsyncServer):
     runner = web.AppRunner(app)
     await runner.setup()
 
-    site = web.TCPSite(runner=runner, host='127.0.0.1', port=8888)
+    site = web.TCPSite(runner=runner, host='127.0.0.1', port=3333)
     await site.start()
 
     while True:

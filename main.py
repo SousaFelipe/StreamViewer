@@ -4,6 +4,7 @@ import socketio
 from core.Server import loop, load_events
 
 
+
 if __name__ == '__main__':
 
     sio = load_events(
