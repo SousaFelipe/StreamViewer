@@ -14,7 +14,6 @@ CONNECTIONS: list[Connection] = []
 
 def load_events(io: socketio.AsyncServer) -> socketio.AsyncServer:
 
-
     @io.event
     def connect(sid, data):
         if hasattr(data, '_size'):
@@ -36,10 +35,8 @@ def load_events(io: socketio.AsyncServer) -> socketio.AsyncServer:
         if data is not None:
             print(f'[CONNECTION ACCEPTED BY SERVER WITH]: {sid}')
             CONNECTIONS.append(
-                Connection(
-                    sid=sid,
-                    channel=Channel(data, sid[0:16])
-                ))
+                    Connection(sid=sid, channel=Channel(data, sid[0:16]))
+                )
 
     @io.event
     def disconnect(data):
@@ -49,7 +46,6 @@ def load_events(io: socketio.AsyncServer) -> socketio.AsyncServer:
             conn.task.cancel(msg=msg)
             CONNECTIONS.remove(conn)
             print(msg)
-
 
     return io
 
@@ -71,4 +67,4 @@ async def loop(io: socketio.AsyncServer):
             if not conn.running:
                 conn.task = asyncio.create_task(Connection.worker(io=io, connection=conn))
                 conn.running = True
-        await asyncio.sleep(0.0166666666666667)
+        await asyncio.sleep(0.0000000001)
